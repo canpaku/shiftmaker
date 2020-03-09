@@ -1,16 +1,22 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	_ "github.com/go-gota/gota/dataframe"
+	_ "github.com/go-gota/gota/series"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	_ "path/filepath"
-	_ "reflect"
+	// "reflect"
+	"strconv"
 	"strings"
 )
 
 func main() {
+
 	exe, err := os.Executable()
 	if err != nil {
 		// エラー時の処理
@@ -31,7 +37,17 @@ func main() {
 		staffnames = append(staffnames, staffname)
 	}
 
-	for _, item := range filenames {
+	staffnum := len(staffnames)
+
+	graph := make([][]string, staffnum)
+	for i := 0; i < staffnum; i++ {
+		graph[i] = make([], 32)
+	}
+	for index, name := range staffnames {
+		graph[index][0] = name
+	}
+
+	for index, item := range filenames {
 		// ファイルをOpenする
 		f, err := os.Open(dir_name + item)
 		// 読み取り時の例外処理
@@ -41,23 +57,35 @@ func main() {
 		// 関数が終了した際に確実に閉じるようにする
 		defer f.Close()
 
-		// バイト型スライスの作成
-		buf := make([]byte, 1024)
+		reader := bufio.NewReaderSize(f, 4096)
 		for {
-			// nはバイト数を示す
-			n, err := f.Read(buf)
-			// バイト数が0になることは、読み取り終了を示す
-			if n == 0 {
+			line, _, err := reader.ReadLine()
+			oneshift := string(line)
+			if strings.Contains(oneshift, "#") {
+				continue
+			}
+
+			// fmt.Println(reflect.TypeOf(oneshift))
+
+			shift := strings.Split(oneshift, " ")
+			if len(shift) < 2 {
 				break
 			}
-			if err != nil {
+			shiftdate, _ := strconv.Atoi(shift[0])
+			shifttime := shift[1]
+
+			graph[index][shiftdate] = shifttime
+
+			if err == io.EOF {
 				break
+			} else if err != nil {
+				panic(err)
 			}
-			// バイト型スライスを文字列型に変換してファイルの内容を出力
-			fmt.Println(string(buf[:n]))
 		}
 	}
+
 	// fmt.Println(dirwalk("/txt"))
+	fmt.Println(graph)
 }
 
 // func dirwalk(dir string) []string {
