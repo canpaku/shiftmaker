@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
 	_ "github.com/go-gota/gota/dataframe"
 	_ "github.com/go-gota/gota/series"
@@ -17,13 +18,35 @@ import (
 
 func main() {
 
+	// [ono    11-17  12-14          15-19] みたいなリストが人数分入ったリスト
+	shiftlist, dir := createShiftList()
+	fmt.Println(shiftlist)
+
+	//書き込みファイル作成
+	file, err := os.Create(dir + "output/sample.csv")
+	if err != nil {
+		log.Println(err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file) // utf8
+	for _, oneperson :=range shiftlist {
+		writer.Write(oneperson)
+	}
+	writer.Flush()
+
+	// graph := make([][]string, staffnum)
+}
+
+func createShiftList() ([][]string, string) {
 	exe, err := os.Executable()
 	if err != nil {
 		// エラー時の処理
 		log.Fatal(err)
 	}
 	slash_index := strings.LastIndex(exe, "/")
-	dir_name := exe[:slash_index+1] + "txt/"
+	dir := exe[:slash_index+1]
+	dir_name := dir + "txt/"
 	files, _ := ioutil.ReadDir(dir_name)
 
 	// txtフォルダ内のテキストファイル名、それぞれの人の名前を獲得
@@ -41,7 +64,7 @@ func main() {
 
 	graph := make([][]string, staffnum)
 	for i := 0; i < staffnum; i++ {
-		graph[i] = make([], 32)
+		graph[i] = make([]string, 32)
 	}
 	for index, name := range staffnames {
 		graph[index][0] = name
@@ -84,24 +107,5 @@ func main() {
 		}
 	}
 
-	// fmt.Println(dirwalk("/txt"))
-	fmt.Println(graph)
+	return graph, dir
 }
-
-// func dirwalk(dir string) []string {
-//     files, err := ioutil.ReadDir(dir)
-//     if err != nil {
-//         panic(err)
-//     }
-
-//     var paths []string
-//     for _, file := range files {
-//         if file.IsDir() {
-//             paths = append(paths, dirwalk(filepath.Join(dir, file.Name()))...)
-//             continue
-//         }
-//         paths = append(paths, filepath.Join(dir, file.Name()))
-//     }
-
-//     return paths
-// }
